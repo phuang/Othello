@@ -46,8 +46,8 @@ public class SystemUiHiderHoneycomb extends SystemUiHiderBase {
         super(activity, anchorView, flags);
 
         mShowFlags = View.SYSTEM_UI_FLAG_VISIBLE;
-        mHideFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE;
-        mTestFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE;
+        mHideFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE | View.SYSTEM_UI_FLAG_IMMERSIVE | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        mTestFlags = View.SYSTEM_UI_FLAG_LOW_PROFILE | View.SYSTEM_UI_FLAG_IMMERSIVE | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
 
         if ((mFlags & FLAG_FULLSCREEN) != 0) {
             // If the client requested fullscreen, add flags relevant to hiding

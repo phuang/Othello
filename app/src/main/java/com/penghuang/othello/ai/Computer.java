@@ -6,7 +6,6 @@ package com.penghuang.othello.ai;
 import java.util.Random;
 
 public class Computer {
-
     private static final int[] SCORE_MAP = new int[] {
             60,  -6,  0,  0,  0,  0,  -6, 60,
             -6, -12, -6, -6, -6, -6, -12, -6,
@@ -134,8 +133,8 @@ public class Computer {
                     continue;
 
                 if (n == mDepth) {
-                    final int val = evaluation(pp1, pp2);
-                    if (val > mMinMax[n]) {
+                    final int val = evaluation(pp2, pp1);
+                    if (val < mMinMax[n]) {
                         mMinMax[n] = val;
                         if (val <= -mMinMax[n - 1])
                             return false;
@@ -151,14 +150,28 @@ public class Computer {
 
         if (!hasBetterStep) {
             if (already) {
+                int final_;
                 final int base = mExhaustive ? 0 : 20000;
-                final int final_ = p1.score - p2.score;
-                if (final_ == 0) {
-                    mMinMax[n] = 0;
+                if ((n & 1) == 1) {
+                    final_ = p1.score - p2.score;
+                    if (final_ > 0) {
+                        mMinMax[n] = -(base + final_);
+                    } else if (final_ < 0) {
+                        mMinMax[n] = base - final_;
+                    } else {
+                        mMinMax[n] = 0;
+                    }
                 } else {
-                    mMinMax[n] = base + final_;
+                    final_ = p2.score - p1.score;
+                    if (final_ > 0) {
+                        mMinMax[n] = base + final_;
+                    } else if (final_ < 0) {
+                        mMinMax[n] = -(base - final_);
+                    } else {
+                        mMinMax[n] = 0;
+                    }
                 }
-                mMinMax[n - 1] = -mMinMax[n];
+                mMinMax[n - 1] = mMinMax[n];
                 return false;
             } else {
                 if (n == mDepth) {
@@ -167,7 +180,9 @@ public class Computer {
                     if (mMinMax[n] <= -mMinMax[n - 1])
                         return false;
                 } else {
+                    ++mDepth;
                     next(n + 1, p2, p1, true);
+                    --mDepth;
                     if (mMinMax[n] <= -mMinMax[n - 1])
                         return false;
                 }
@@ -213,7 +228,7 @@ public class Computer {
                     continue;
 
                 // Search next step if mDepth > 1.
-                findValidatedStep = (mDepth <= 1) || next(2, plaStatus, comStatus, false);
+                findValidatedStep = (mDepth == 1) || next(2, plaStatus, comStatus, false);
 
                 if (findValidatedStep) {
                     mSX = x;
@@ -233,11 +248,9 @@ public class Computer {
                     final int xx = x + dir[0];
                     if (xx < 0 || xx >= 8)
                         continue;
-
                     final int yy = y + dir[1];
                     if (yy < 0 || yy >= 8)
                         continue;
-
                     mNeighbor[x][y].setChess(xx, yy);
                 }
             }
