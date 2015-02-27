@@ -6,7 +6,7 @@ package com.penghuang.othello;
 import java.util.Random;
 
 class Computer {
-    private static final int[] SCORE_MAP = new int[] {
+    private static final int[] SCORE_MAP = {
             60,  -6,  0,  0,  0,  0,  -6, 60,
             -6, -12, -6, -6, -6, -6, -12, -6,
              0,  -6,  0,  0,  0,  0,  -6,  0,
@@ -17,13 +17,13 @@ class Computer {
             60,  -6,  0,  0,  0,  0,  -6, 60
     };
 
-    private static final int[][] DIR_MAP = new int[][] {
+    private static final int[][] DIR_MAP = {
             { -1, -1 }, { -1, 0 }, { -1, 1 },
             { 0, -1 }, /* {0, 0}, */ { 0, 1 },
             { 1, -1 }, {1, 0}, { 1, 1 },
     };
 
-    private static final int[][] THE_FIRST_STEP = new int[][] {
+    private static final int[][] THE_FIRST_STEP = {
             { 3, 2 }, { 2, 3 }, { 5, 4 }, { 4, 5 }
     };
 
