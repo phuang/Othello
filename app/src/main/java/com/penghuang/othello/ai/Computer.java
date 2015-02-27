@@ -5,7 +5,7 @@ package com.penghuang.othello.ai;
  */
 import java.util.Random;
 
-class Computer {
+public class Computer {
 
     private static final int[] SCORE_MAP = new int[] {
             60,  -6,  0,  0,  0,  0,  -6, 60,
@@ -22,6 +22,10 @@ class Computer {
             { -1, -1 }, { -1, 0 }, { -1, 1 },
             { 0, -1 }, /* {0, 0}, */ { 0, 1 },
             { 1, -1 }, {1, 0}, { 1, 1 },
+    };
+
+    private static final int[][] THE_FIRST_STEP = new int[][] {
+            { 3, 2 }, { 2, 3 }, { 5, 4 }, { 4, 5 }
     };
 
     private Random mRandom = new Random();
@@ -75,9 +79,9 @@ class Computer {
             return false;
 
         int changeNum = 0;
-        for (int i = 0; i < DIR_MAP.length; ++i) {
-            final int inx = DIR_MAP[i][0];
-            final int iny = DIR_MAP[i][1];
+        for (final int[] dir : DIR_MAP) {
+            final int inx = dir[0];
+            final int iny = dir[1];
             int xx = x + inx;
             int yy = y + iny;
             int step = 0;
@@ -117,31 +121,69 @@ class Computer {
         return true;
     }
 
-    boolean begin(final Square computer, final Square player, int comNum,
-                  int plaNum) {
-        boolean findValidatedStep = false;
-        boolean b;
+    private boolean next(int n, final Status p1, final Status p2, boolean already) {
+        boolean hasBetterStep = false;
+        mMinMax[n] = 30000;
+        Status pp1 = new Status();
+        Status pp2 = new Status();
+        for (int x = 0; x < 8; ++x) {
+            for (int y = 0; y < 8; ++y) {
+                pp1.setStatus(p1);
+                pp2.setStatus(p2);
+                if (!computeStep(pp1, pp2, x, y))
+                    continue;
 
+                if (n == mDepth) {
+                    final int val = evaluation(pp1, pp2);
+                    if (val > mMinMax[n]) {
+                        mMinMax[n] = val;
+                        if (val <= -mMinMax[n - 1])
+                            return false;
+                    }
+                } else {
+                    final boolean b = next(n + 1, pp2, pp1, false);
+                    if (b && mMinMax[n] <= -mMinMax[n - 1])
+                        return false;
+                }
+                hasBetterStep = true;
+            }
+        }
+
+        if (!hasBetterStep) {
+            if (already) {
+                final int base = mExhaustive ? 0 : 20000;
+                final int final_ = p1.score - p2.score;
+                if (final_ == 0) {
+                    mMinMax[n] = 0;
+                } else {
+                    mMinMax[n] = base + final_;
+                }
+                mMinMax[n - 1] = -mMinMax[n];
+                return false;
+            } else {
+                if (n == mDepth) {
+                    final int val = evaluation(p1, p2);
+                    mMinMax[n] = val;
+                    if (mMinMax[n] <= -mMinMax[n - 1])
+                        return false;
+                } else {
+                    next(n + 1, p2, p1, true);
+                    if (mMinMax[n] <= -mMinMax[n - 1])
+                        return false;
+                }
+            }
+        }
+        mMinMax[n - 1] = -mMinMax[n];
+        return hasBetterStep;
+    }
+
+    public boolean begin(final Square computer, final Square player, int comNum, int plaNum) {
+        boolean findValidatedStep = false;
         final int chessNum = comNum + plaNum;
         if (chessNum == 4) {
-            switch (mRandom.nextInt(4)) {
-                case 0:
-                    mSX = 3;
-                    mSY = 2;
-                    break;
-                case 1:
-                    mSX = 2;
-                    mSY = 3;
-                    break;
-                case 2:
-                    mSX = 5;
-                    mSY = 4;
-                    break;
-                case 3:
-                    mSX = 4;
-                    mSY = 5;
-                    break;
-            }
+            final int i  = mRandom.nextInt(4);
+            mSX = THE_FIRST_STEP[i][0];
+            mSY = THE_FIRST_STEP[i][1];
             return true;
         }
 
@@ -155,15 +197,13 @@ class Computer {
 
         final int comScore = computer.computeScore(SCORE_MAP);
         final int plaScore = player.computeScore(SCORE_MAP);
-        Status comStatus = new Status ();
-        Status plaStatus = new Status ();
-
-        mMinMax[0] = 30000;
 
         mExhaustive = (chessNum + mDepth >= 64);
-
         mEffect = 100 * (chessNum + mDepth - 4) / 60;
+        mMinMax[1] = 30000;
 
+        Status comStatus = new Status ();
+        Status plaStatus = new Status ();
         for (int x = 0; x < 8; ++x) {
             for (int y = 0; y < 8; ++y) {
                 comStatus.setStatus(computer, comNum, comScore);
@@ -172,13 +212,10 @@ class Computer {
                 if (!computeStep(comStatus, plaStatus, x, y))
                     continue;
 
-                if (mDepth == 1) {
-                    b = true;
-                } else {
-                    b = next(1, plaStatus, comStatus, false);
-                }
+                // Search next step if mDepth > 1.
+                findValidatedStep = (mDepth <= 1) || next(2, plaStatus, comStatus, false);
 
-                if (b) {
+                if (findValidatedStep) {
                     mSX = x;
                     mSY = y;
                     findValidatedStep = true;
@@ -188,144 +225,16 @@ class Computer {
         return findValidatedStep;
     }
 
-    private boolean next(int n, final Status p1, final Status p2, boolean already) {
-        boolean hasValidatedStep = false;
-        mMinMax[n] = 30000;
-        Status pp1 = new Status();
-        Status pp2 = new Status();
-        for (int x = 0; x < 8; ++x) {
-            for (int y = 0; y < 8; ++y) {
-                pp1.setStatus(p1);
-                pp2.setStatus(p2);
-                if (!computeStep(pp1, pp2, x, y))
-                    continue;
-                if (n == mDepth - 1) {
-                    final int val = evaluation(pp1, pp2);
-                    if (val < mMinMax[n]) {
-                        mMinMax[n] = val;
-                        if (val <= -mMinMax[n - 1])
-                            return false;
-                    }
-                    hasValidatedStep = true;
-                }
-            }
-        }
-        return hasValidatedStep;
-    }
-
-    private boolean next(int n, final Square myself, final Square opponent,
-                         int my_num, int opp_num, int my_score, int opp_score,
-                         boolean already) {
-        boolean chess;
-        boolean sign = false;
-        boolean b;
-        boolean count = false;
-        int b_my_score;
-        int b_opp_score;
-        Square my = new Square(myself);
-        Square opp = new Square(opponent);
-        Square ret = new Square();
-
-        mMinMax[n] = 30000;
-        for (int x = 0; x < 8; ++x) {
-            for (int y = 0; y < 8; ++y) {
-                    if (n == mDepth - 1) {
-                        int val = evaluation(opp, my, opp_num - changeNum, my_num
-                                + changeNum + 1, b_opp_score, b_my_score);
-
-                        if (val < mMinMax[n]) {
-                            mMinMax[n] = val;
-                            if (mMinMax[n] <= -mMinMax[n - 1]) {
-                                return false;
-                            }
-                        }
-                        sign = true;
-                    } else {
-                        b = next(n + 1, opp, my, opp_num - changeNum, my_num
-                                + changeNum + 1, b_opp_score, b_my_score, false);
-                        if (b) {
-                            if (mMinMax[n] <= -mMinMax[n - 1]) {
-                                return false;
-                            }
-                            sign = true;
-                        }
-                    }
-
-                    changeNum = 0;
-                    count = false;
-                    my.setSquare(myself);
-                    opp.setSquare(opponent);
-                }
-            }
-
-            if (!sign) {
-                if (already) {
-                    int _final;
-                    int base = 20000;
-
-                    if (mExhaustive) {
-                        base = 0;
-
-                    }
-                    if ((n % 2) == 0) {
-                        _final = my_num - opp_num;
-                        if (_final > 0) {
-                            mMinMax[n] = -(base + _final);
-                        } else if (_final < 0) {
-                            mMinMax[n] = base - _final;
-                        } else {
-                            mMinMax[n] = 0;
-                        }
-                    } else {
-                        _final = opp_num - my_num;
-                        if (_final > 0) {
-                            mMinMax[n] = base + _final;
-                        } else if (_final < 0) {
-                            mMinMax[n] = -base + _final;
-                        } else {
-                            mMinMax[n] = 0;
-                        }
-                    }
-
-                    mMinMax[n - 1] = -mMinMax[n];
-                    return false;
-                } else {
-                    mDepth++;
-                    if (n == mDepth - 1) {
-                        int val = evaluation(opp, my, opp_num, my_num, opp_score,
-                                my_score);
-                        mMinMax[n] = val;
-                        mDepth--;
-                        if (mMinMax[n] <= -mMinMax[n - 1]) {
-                            return false;
-                        }
-                    } else {
-                        b = next(n + 1, opp, my, opp_num, my_num, opp_score,
-                                my_score, true);
-                        mDepth--;
-                        if (mMinMax[n] <= -mMinMax[n - 1]) {
-                            return false;
-                        }
-
-                    }
-                }
-            }
-        }
-
-        mMinMax[n - 1] = -mMinMax[n];
-        return true;
-    }
-
     private void initNeighbor() {
         for (int y = 0; y < 8; ++y) {
             for (int x = 0; x < 8; ++x) {
                 mNeighbor[x][y] = new Square();
-                for (int i = 0; i < DIR_MAP.length; ++i) {
-                    final int xx = x + DIR_MAP[i][0];
-                    if (xx < 0 || xx >=8)
+                for (final int[] dir : DIR_MAP) {
+                    final int xx = x + dir[0];
+                    if (xx < 0 || xx >= 8)
                         continue;
 
-                    final int yy = y + DIR_MAP[i][1];
+                    final int yy = y + dir[1];
                     if (yy < 0 || yy >= 8)
                         continue;
 
@@ -352,7 +261,7 @@ class Computer {
     }
 
     private static int getScore(int x, int y) {
-        assert(x >= 0 && x <= 7 && y >=0 && y <=7);
+        assert(x >= 0 && x <= 7 && y >= 0 && y <= 7);
         return SCORE_MAP[x + (y << 3)];
     }
 
@@ -381,43 +290,7 @@ class Computer {
                 }
             }
         }
-
         return (p1.number - p2.number) * mEffect +
                ((p1.score - p2.score) + (axis1 - axis2) * 4) * (100 - mEffect);
-    }
-
-    private int evaluation(final Square com, final Square pla, int com_num,
-                           int pla_num, int com_score, int pla_score) {
-
-        int x, y;
-        int pla_axis = 0;
-        int com_axis = 0;
-        Square ret = new Square();
-        Square board = new Square(com);
-        board = new Square(board.bitOr(pla));
-
-        if (mExhaustive)
-            return com_num - pla_num;
-
-        if (com_num + pla_num > 44) {
-            for (x = 0; x < 8; x++) {
-                for (y = 0; y < 8; y++) {
-                    if (pla.getChess(x, y)) {
-                        ret.setSquare(board);
-                        if (ret.bitAnd(mAxis[x][y]).equals(mAxis[x][y])) {
-                            pla_axis++;
-                        }
-                    } else if (com.getChess(x, y)) {
-                        ret.setSquare(board);
-                        if (ret.bitAnd(mAxis[x][y]).equals(mAxis[x][y])) {
-                            com_axis++;
-                        }
-                    }
-                }
-            }
-        }
-
-        return mEffect * (com_num - pla_num) + (100 - mEffect)
-                * ((com_score - pla_score) + (com_axis - pla_axis) * 4);
     }
 }
