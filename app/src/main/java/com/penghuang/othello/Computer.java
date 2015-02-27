@@ -1,11 +1,11 @@
-package com.penghuang.othello.ai;
+package com.penghuang.othello;
 
 /**
  * Created by penghuang on 2/24/15.
  */
 import java.util.Random;
 
-public class Computer {
+class Computer {
     private static final int[] SCORE_MAP = new int[] {
             60,  -6,  0,  0,  0,  0,  -6, 60,
             -6, -12, -6, -6, -6, -6, -12, -6,

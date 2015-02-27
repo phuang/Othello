@@ -1,4 +1,4 @@
-package com.penghuang.othello.ai;
+package com.penghuang.othello;
 
 /**
  * Created by penghuang on 2/24/15.

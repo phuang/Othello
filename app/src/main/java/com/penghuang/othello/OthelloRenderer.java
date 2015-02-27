@@ -1,7 +1,8 @@
-package com.penghuang.othello.ui;
+package com.penghuang.othello;
 
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -9,7 +10,9 @@ import javax.microedition.khronos.opengles.GL10;
 /**
  * Created by penghuang on 2/27/15.
  */
-public class OthelloRenderer implements GLSurfaceView.Renderer {
+class OthelloRenderer implements GLSurfaceView.Renderer {
+    private static final String TAG = "OthelloRenderer";
+    
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
         GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
@@ -27,5 +30,6 @@ public class OthelloRenderer implements GLSurfaceView.Renderer {
     }
 
     private void draw() {
+        Log.d(TAG, "draw()");
     }
 }
